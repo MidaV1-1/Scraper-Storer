@@ -42,7 +42,7 @@ Make sure to add Python to your system's PATH variable during the installation. 
 
 ## Script Installation
 1. Clone the repository: `git clone https://github.com/MidaV1-1/Scraper-Storer.git`
-2. Navigate to the project directory: `cd amazon-reviews-extraction`
+2. Navigate to the project directory: `cd scraper-storer`
 3. Install the required dependencies: `pip install -r requirements.txt`
 
 ## Usage
