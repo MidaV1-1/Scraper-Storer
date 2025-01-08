@@ -61,8 +61,8 @@ For a detailed tutorial on how to use this script, please refer to the [Amazon R
 ## Contact
 For any questions or feedback, feel free to reach out:
 
-- Email: kawsar@kawsarlog.com
-- Website: kawsarlog.com
+- Email: aelbahat1@gmail.com
+- Website: Mida1V1.com
 
 ---
 
