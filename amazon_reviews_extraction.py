@@ -1,130 +1,77 @@
-# Import packages
-import requests
+# Import necessary packages
 import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+import time
 
-# Header to set the requests as a browser requests
-headers = {
-    'authority': 'www.amazon.com',
-    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-    'accept-language': 'en-US,en;q=0.9,bn;q=0.8',
-    'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="102", "Google Chrome";v="102"',
-    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'
-}
+# Set up Chrome options to use the correct user profile
+chrome_options = webdriver.ChromeOptions()
 
-# URL of The amazon Review page
-reviews_url = 'https://www.amazon.com/Legendary-Whitetails-Journeyman-Jacket-Tarmac/product-reviews/B013KW38RQ/'
+# Specify the correct user data directory and profile
+chrome_options.add_argument("--user-data-dir=/mnt/c/Users/mida/AppData/Local/Google/Chrome/User Data")  # Path to user data
+chrome_options.add_argument("--profile-directory=Default")  # Change to the profile you're signed in with, e.g., "Default", "Profile 1", etc.
 
-# Define Page No
-len_page = 4
+# Initialize WebDriver with ChromeDriverManager and Chrome options
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
-### <font color="red">Functions</font>
+# URL of the Amazon review page
+reviews_url = 'https://www.amazon.ae/KAREZZ-Ceremonial-Uji-Kyoto-Certified-Antioxidants/product-reviews/B0CZF1Z8PY/'
 
-# Extra Data as Html object from amazon Review page
-def reviewsHtml(url, len_page):
+# Function to handle login (manual login if not already logged in)
+def login_amazon():
+    driver.get("https://www.amazon.ae/ap/signin")
+    time.sleep(2)
     
-    # Empty List define to store all pages html data
-    soups = []
-    
-    # Loop for gather all 3000 reviews from 300 pages via range
-    for page_no in range(1, len_page + 1):
-        
-        # parameter set as page no to the requests body
-        params = {
-            'ie': 'UTF8',
-            'reviewerType': 'all_reviews',
-            'filterByStar': 'critical',
-            'pageNumber': page_no,
-        }
-        
-        # Request make for each page
-        response = requests.get(url, headers=headers)
-        
-        # Save Html object by using BeautifulSoup4 and lxml parser
-        soup = BeautifulSoup(response.text, 'lxml')
-        
-        # Add single Html page data in master soups list
-        soups.append(soup)
-        
-    return soups
+    # Check if we're already logged in by looking for a sign-out button
+    try:
+        sign_in_button = driver.find_element(By.ID, 'signInSubmit')
+        if sign_in_button.is_displayed():
+            print("Not logged in. Please log in manually...")
+            print("The script will pause for you to log in.")
+            time.sleep(60)  # Pause for 1 minute, you can adjust this time
+        else:
+            print("Already logged in.")
+    except Exception as e:
+        print("Error during login:", e)
 
-# Grab Reviews name, description, date, stars, title from HTML
-def getReviews(html_data):
+# Function to fetch review HTML from Amazon page
+def reviewsHtml(url):
+    driver.get(url)
+    time.sleep(2)  # Wait for the page to load
 
-    # Create Empty list to Hold all data
-    data_dicts = []
-    
-    # Select all Reviews BOX html using css selector
-    boxes = html_data.select('div[data-hook="review"]')
-    
-    # Iterate all Reviews BOX 
-    for box in boxes:
-        
-        # Select Name using css selector and cleaning text using strip()
-        # If Value is empty define value with 'N/A' for all.
+    # Use BeautifulSoup to scrape the page
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    reviews = soup.find_all('div', {'data-asin': True})
+
+    all_reviews = []
+    for review in reviews:
         try:
-            name = box.select_one('[class="a-profile-name"]').text.strip()
-        except Exception as e:
-            name = 'N/A'
+            review_text = review.find('span', {'data-asin': True}).text.strip()
+            review_date = review.find('span', {'class': 'a-size-base a-color-secondary review-date'}).text.strip()
+            reviewer_name = review.find('span', {'class': 'a-profile-name'}).text.strip()
+            all_reviews.append({'Review': review_text, 'Date': review_date, 'Reviewer': reviewer_name})
+        except AttributeError:
+            continue
+    return all_reviews
 
-        try:
-            stars = box.select_one('[data-hook="review-star-rating"]').text.strip().split(' out')[0]
-        except Exception as e:
-            stars = 'N/A'   
+# Login to Amazon (if needed)
+login_amazon()
 
-        try:
-            title = box.select_one('[data-hook="review-title"]').text.strip()
-        except Exception as e:
-            title = 'N/A'
+# Fetch reviews data
+reviews_data = reviewsHtml(reviews_url)
 
-        try:
-            # Convert date str to dd/mm/yyy format
-            datetime_str = box.select_one('[data-hook="review-date"]').text.strip().split(' on ')[-1]
-            date = datetime.strptime(datetime_str, '%B %d, %Y').strftime("%d/%m/%Y")
-        except Exception as e:
-            date = 'N/A'
+# Convert reviews to a DataFrame
+df = pd.DataFrame(reviews_data)
 
-        try:
-            description = box.select_one('[data-hook="review-body"]').text.strip()
-        except Exception as e:
-            description = 'N/A'
+# Save reviews to a CSV file
+df.to_csv('amazon_reviews.csv', index=False)
 
-        # create Dictionary with al review data 
-        data_dict = {
-            'Name' : name,
-            'Stars' : stars,
-            'Title' : title,
-            'Date' : date,
-            'Description' : description
-        }
+# Close the browser
+driver.quit()
 
-        # Add Dictionary in master empty List
-        data_dicts.append(data_dict)
-    
-    return data_dicts
-
-### <font color="red">Data Process</font>
-
-# Grab all HTML
-html_datas = reviewsHtml(reviews_url, len_page)
-
-# Empty List to Hold all reviews data
-reviews = []
-
-# Iterate all Html page 
-for html_data in html_datas:
-    
-    # Grab review data
-    review = getReviews(html_data)
-    
-    # add review data in reviews empty list
-    reviews += review
-
-# Create a dataframe with reviews Data
-df_reviews = pd.DataFrame(reviews)
-
-print(df_reviews)
-
-# Save data
-df_reviews.to_csv('reviews.csv', index=False)
+print("Successfully fetched and saved the reviews!")
