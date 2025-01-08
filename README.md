@@ -41,7 +41,7 @@ Make sure to add Python to your system's PATH variable during the installation. 
 ![Add Python to PATH](https://camo.githubusercontent.com/96c8ee1f0cc3bbb4145befc07d39dfc629404b8f3dc692298b6419e20714fa33/68747470733a2f2f696d673030312e70726e747363722e636f6d2f66696c652f696d673030312f544e2d6d62647a79547871767130546a6f7a683959512e6a706567)
 
 ## Script Installation
-1. Clone the repository: `git clone https://github.com/kawsarlog/amazon-reviews-extraction.git`
+1. Clone the repository: `git clone https://github.com/MidaV1-1/Scraper-Storer.git`
 2. Navigate to the project directory: `cd amazon-reviews-extraction`
 3. Install the required dependencies: `pip install -r requirements.txt`
 
