@@ -2,3 +2,9 @@ requests==2.31.0
 pandas==1.2.0
 bs4==0.0.1
 lxml==4.9.2
+selenium.webdriver.common.keys
+datetime
+selenium.webdriver.common.by
+selenium.webdriver.chrome.service
+webdriver_manager.chrome
+selenium
